@@ -3,7 +3,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 import os
 
-from extensions import mongo, jwt   # ✅ use extensions
+from extensions import mongo, jwt
 
 load_dotenv()
 
@@ -11,19 +11,26 @@ load_dotenv()
 def create_app():
     app = Flask(__name__)
 
-   
-    app.config["MONGO_URI"] = os.getenv("MONGO_URI")
+    # ✅ Load Mongo URI
+    mongo_uri = os.getenv("MONGO_URI")
 
-   
+    if not mongo_uri:
+        raise ValueError("❌ MONGO_URI is missing from environment variables")
+
+    print("✅ MONGO_URI loaded:", mongo_uri[:25], "...")
+
+    app.config["MONGO_URI"] = mongo_uri
+
+    # JWT config
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "super-secret")
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 86400
 
-  
+    # Init extensions
     mongo.init_app(app)
     jwt.init_app(app)
     CORS(app, origins=["http://localhost:5173"], supports_credentials=True)
 
-    # Register routes
+    # Routes
     from routes.auth import auth_bp
     from routes.users import users_bp
     from routes.projects import projects_bp
