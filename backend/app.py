@@ -11,14 +11,14 @@ load_dotenv()
 def create_app():
     app = Flask(__name__)
 
-    # ✅ MongoDB config
+   
     app.config["MONGO_URI"] = os.getenv("MONGO_URI")
 
-    # ✅ JWT config
+   
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "super-secret")
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 86400
 
-    # Init extensions
+  
     mongo.init_app(app)
     jwt.init_app(app)
     CORS(app, origins=["http://localhost:5173"], supports_credentials=True)
