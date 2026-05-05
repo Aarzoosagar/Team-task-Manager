@@ -11,26 +11,18 @@ load_dotenv()
 def create_app():
     app = Flask(__name__)
 
-    # ✅ Load Mongo URI
     mongo_uri = os.getenv("MONGO_URI")
-
     if not mongo_uri:
-        raise ValueError("❌ MONGO_URI is missing from environment variables")
-
-    print("✅ MONGO_URI loaded:", mongo_uri[:25], "...")
+        raise ValueError("❌ MONGO_URI is missing")
 
     app.config["MONGO_URI"] = mongo_uri
-
-    # JWT config
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "super-secret")
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 86400
 
-    # Init extensions
     mongo.init_app(app)
     jwt.init_app(app)
-    CORS(app, origins=["http://localhost:5173"], supports_credentials=True)
+    CORS(app, resources={r"/*": {"origins": "*"}})
 
-    # Routes
     from routes.auth import auth_bp
     from routes.users import users_bp
     from routes.projects import projects_bp
@@ -44,6 +36,9 @@ def create_app():
     return app
 
 
+# ✅ FIXED PART (this is what you were missing)
 if __name__ == "__main__":
-    app = create_app()
-    app.run(debug=True, port=5000)
+    app = create_app()   # 
+
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
