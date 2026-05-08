@@ -157,31 +157,58 @@ def create_task():
 @auth_required
 def update_task(task_id):
     task = get_task_or_404(task_id)
+
     if not task:
         return jsonify({"error": "Task not found"}), 404
 
     user = get_current_user()
 
-    # member restriction
+    # ✅ Members can update only their assigned tasks
     if user["role"] != "admin" and task.get("assigned_to") != str(user["_id"]):
         return jsonify({"error": "Forbidden"}), 403
 
-    data = request.get_json()
+    data = request.get_json() or {}
     update_data = {}
 
+    # ✅ Admin can update everything
     if user["role"] == "admin":
+
         if "title" in data:
             update_data["title"] = data["title"]
+
         if "description" in data:
             update_data["description"] = data["description"]
+
         if "assigned_to" in data:
             update_data["assigned_to"] = data["assigned_to"]
-        if "due_date" in data:
-            update_data["due_date"] = datetime.fromisoformat(data["due_date"])
 
-    if "status" in data and data["status"] in STATUSES:
+        # ✅ Safe due_date handling
+        if "due_date" in data:
+
+            if data["due_date"]:
+                try:
+                    update_data["due_date"] = datetime.fromisoformat(
+                        data["due_date"]
+                    )
+                except ValueError:
+                    return jsonify({
+                        "error": "Invalid due_date format"
+                    }), 422
+
+            else:
+                update_data["due_date"] = None
+
+    # ✅ Both admin + members can update status
+    if "status" in data:
+
+        if data["status"] not in STATUSES:
+            return jsonify({
+                "error": f"Status must be one of {STATUSES}"
+            }), 422
+
         update_data["status"] = data["status"]
 
+    # ✅ Update timestamp
     update_data["updated_at"] = datetime.utcnow()
 
     mongo.db.tasks.update_one(
@@ -189,9 +216,13 @@ def update_task(task_id):
         {"$set": update_data}
     )
 
-    updated = mongo.db.tasks.find_one({"_id": ObjectId(task_id)})
+    updated = mongo.db.tasks.find_one({
+        "_id": ObjectId(task_id)
+    })
 
-    return jsonify({"task": serialize(updated)})
+    return jsonify({
+        "task": serialize(updated)
+    }), 200
 
 
 # ✅ DELETE TASK

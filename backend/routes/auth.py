@@ -9,8 +9,7 @@ from middleware.auth import auth_required, get_current_user
 from utils.helpers import serialize
 
 auth_bp = Blueprint("auth", __name__)
-
-users = mongo.db.users
+# mongo.db.users
 
 
 # ------------------ Schemas ------------------
@@ -39,7 +38,7 @@ def signup():
         return jsonify({"error": "Validation failed", "details": err.messages}), 422
 
     # check existing user
-    if users.find_one({"email": data["email"]}):
+    if mongo.db.users.find_one({"email": data["email"]}):
         return jsonify({"error": "Email already registered"}), 409
 
     user = {
@@ -49,7 +48,7 @@ def signup():
         "role": data["role"]
     }
 
-    result = users.insert_one(user)
+    result = mongo.db.users.insert_one(user)
 
     token = create_access_token(identity=str(result.inserted_id))
 
@@ -74,7 +73,7 @@ def login():
     except ValidationError as err:
         return jsonify({"error": "Validation failed", "details": err.messages}), 422
 
-    user = users.find_one({"email": data["email"]})
+    user = mongo.db.users.find_one({"email": data["email"]})
 
     if not user or not check_password_hash(user["password"], data["password"]):
         return jsonify({"error": "Invalid email or password"}), 401
