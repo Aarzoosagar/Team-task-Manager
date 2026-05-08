@@ -12,16 +12,25 @@ def create_app():
     app = Flask(__name__)
 
     mongo_uri = os.getenv("MONGO_URI")
+
     if not mongo_uri:
         raise ValueError("❌ MONGO_URI is missing")
 
     app.config["MONGO_URI"] = mongo_uri
-    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "super-secret")
+    app.config["JWT_SECRET_KEY"] = os.getenv(
+        "JWT_SECRET_KEY",
+        "super-secret"
+    )
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 86400
 
     mongo.init_app(app)
     jwt.init_app(app)
-    CORS(app, resources={r"/*": {"origins": "*"}})
+
+    CORS(
+        app,
+        resources={r"/*": {"origins": "*"}},
+        supports_credentials=True
+    )
 
     from routes.auth import auth_bp
     from routes.users import users_bp
@@ -33,12 +42,23 @@ def create_app():
     app.register_blueprint(projects_bp, url_prefix="/projects")
     app.register_blueprint(tasks_bp, url_prefix="/tasks")
 
+    # ✅ Home route
+    @app.route("/")
+    def home():
+        return {
+            "message": "Team Task Manager API Running"
+        }
+
     return app
 
 
-# ✅ FIXED PART (this is what you were missing)
+# ✅ Run locally
 if __name__ == "__main__":
-    app = create_app()   # 
+    app = create_app()
 
     port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+
+    app.run(
+        host="0.0.0.0",
+        port=port
+    )
